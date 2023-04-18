@@ -1,16 +1,32 @@
 package cn.edu.sustech.cs209.chatting.common;
 
-public class Message {
+import java.io.Serializable;
 
-    private Long timestamp;
+public class Message implements Serializable {
 
-    private String sentBy;
+    private final Long timestamp;
 
-    private String sendTo;
+    private int id;
 
-    private String data;
+    private final int sentBy;
 
-    public Message(Long timestamp, String sentBy, String sendTo, String data) {
+    private final int sendTo;
+
+    private final String data;
+
+    public int getId() {
+        return id;
+    }
+
+    public Message(Long timestamp, int sentBy, int sendTo, String data, int id) {
+        this.timestamp = timestamp;
+        this.id = id;
+        this.sentBy = sentBy;
+        this.sendTo = sendTo;
+        this.data = data;
+    }
+
+    public Message(Long timestamp, int sentBy, int sendTo, String data) {
         this.timestamp = timestamp;
         this.sentBy = sentBy;
         this.sendTo = sendTo;
@@ -21,11 +37,11 @@ public class Message {
         return timestamp;
     }
 
-    public String getSentBy() {
+    public int getSentBy() {
         return sentBy;
     }
 
-    public String getSendTo() {
+    public int getSendTo() {
         return sendTo;
     }
 

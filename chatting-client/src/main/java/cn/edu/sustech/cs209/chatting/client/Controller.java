@@ -1,6 +1,9 @@
 package cn.edu.sustech.cs209.chatting.client;
 
 import cn.edu.sustech.cs209.chatting.common.Message;
+import cn.edu.sustech.cs209.chatting.client.ClientService;
+
+import cn.edu.sustech.cs209.chatting.common.User;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -8,11 +11,15 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Callback;
+import javafx.util.Pair;
 
 import java.net.URL;
+import java.sql.SQLException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -25,21 +32,74 @@ public class Controller implements Initializable {
 
     String username;
 
+    String password;
+
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
 
-        Dialog<String> dialog = new TextInputDialog();
+        Dialog<Pair<String, String>> dialog = new Dialog<>();
         dialog.setTitle("Login");
         dialog.setHeaderText(null);
-        dialog.setContentText("Username:");
 
-        Optional<String> input = dialog.showAndWait();
-        if (input.isPresent() && !input.get().isEmpty()) {
+        // 设置自定义GridPane布局
+        GridPane gridPane = new GridPane();
+        gridPane.setHgap(10);
+        gridPane.setVgap(10);
+        gridPane.setPadding(new Insets(20, 150, 10, 10));
+
+        TextField usernameTextField = new TextField();
+        usernameTextField.setPromptText("Username");
+        PasswordField passwordField = new PasswordField();
+        passwordField.setPromptText("Password");
+        Label loginStatusLabel = new Label();
+        loginStatusLabel.setTextFill(Color.RED);
+
+        gridPane.add(new Label("Username:"), 0, 0);
+        gridPane.add(usernameTextField, 1, 0);
+        gridPane.add(new Label("Password:"), 0, 1);
+        gridPane.add(passwordField, 1, 1);
+//        gridPane.add(loginStatusLabel, 0, 2);
+        dialog.getDialogPane().setContent(gridPane);
+        gridPane.getChildren().addAll(loginStatusLabel);
+        // 设置按钮
+        ButtonType loginButtonType = new ButtonType("Login", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(loginButtonType, ButtonType.CANCEL);
+
+        // 获取用户输入
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == loginButtonType) {
+                return new Pair<>(usernameTextField.getText(), passwordField.getText());
+            }
+            return null;
+        });
+
+        Optional<Pair<String, String>> input = dialog.showAndWait();
+        if (input.isPresent()) {
             /*
                TODO: Check if there is a user with the same name among the currently logged-in users,
                      if so, ask the user to change the username
              */
-            username = input.get();
+            username = input.get().getKey();
+            password = input.get().getValue();
+            try {
+                User user = ClientService.login(username, password);
+                if (user != null) {
+                    System.out.println("login success");
+                    loginStatusLabel.setText("Login successful!");
+                    loginStatusLabel.setTextFill(Color.GREEN);
+
+                } else {
+                    System.out.println("login fail!");
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("Login Failed");
+                    alert.setHeaderText(null);
+                    alert.setContentText("Login failed. Please check your username and password.");
+                    alert.showAndWait();
+                    Platform.exit();
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         } else {
             System.out.println("Invalid username " + input + ", exiting");
             Platform.exit();
@@ -117,14 +177,14 @@ public class Controller implements Initializable {
                     }
 
                     HBox wrapper = new HBox();
-                    Label nameLabel = new Label(msg.getSentBy());
+                    Label nameLabel = new Label(Integer.toString(msg.getSentBy()));
                     Label msgLabel = new Label(msg.getData());
 
                     nameLabel.setPrefSize(50, 20);
                     nameLabel.setWrapText(true);
                     nameLabel.setStyle("-fx-border-color: black; -fx-border-width: 1px;");
 
-                    if (username.equals(msg.getSentBy())) {
+                    if (username.equals(Integer.toString(msg.getSentBy()))) {
                         wrapper.setAlignment(Pos.TOP_RIGHT);
                         wrapper.getChildren().addAll(msgLabel, nameLabel);
                         msgLabel.setPadding(new Insets(0, 20, 0, 0));
