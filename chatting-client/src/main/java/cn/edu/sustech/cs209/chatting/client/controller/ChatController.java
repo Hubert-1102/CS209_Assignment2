@@ -17,15 +17,25 @@ public class ChatController {
     @FXML
     ListView<Message> chatContentList;
 
-    String username;
+    @FXML
+    private Label username;
+
+    int id ;
 
     String password;
     @FXML
     private VBox chatArea;
 
     @FXML
-    private TextField messageField;
+    private TextField messageField ;
 
+    public void setUsername(String username) {
+        this.username.setText("Hello! "+username+" ");
+    }
+
+    public void setId(int id){
+        this.id = id;
+    }
     @FXML
     private void doSendMessage() {
 

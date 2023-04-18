@@ -28,8 +28,11 @@ public class LoginController {
         User user = ClientService.login(username, password);
         if (user != null) {
             int id = user.getId();
-
-            Parent chatRoot = FXMLLoader.load((getClass().getResource("../chat.fxml")));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("../chat.fxml"));
+            Parent chatRoot = loader.load();
+            ChatController chatController = loader.getController();
+            chatController.setUsername(username);
+            chatController.setId(id);
             Scene chatScene = new Scene(chatRoot);
             Stage primaryStage = (Stage) usernameTextField.getScene().getWindow();
             primaryStage.setScene(chatScene);

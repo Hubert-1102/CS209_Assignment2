@@ -3,15 +3,15 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<VBox spacing="10" xmlns:fx="http://javafx.com/fxml" fx:controller="cn.edu.sustech.cs209.chatting.client.controller.LoginController">
+<VBox prefWidth="300.0" spacing="10" style="-fx-background-color: #8be8e1" xmlns:fx="http://javafx.com/fxml" fx:controller="cn.edu.sustech.cs209.chatting.client.controller.LoginController">
     <padding>
         <Insets top="10" right="10" bottom="10" left="10"/>
     </padding>
     <GridPane hgap="10" vgap="10">
-        <Label text="Username:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+        <Label text="Username:"  GridPane.columnIndex="0" GridPane.rowIndex="0"/>
         <Label text="Password:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
-        <TextField fx:id="usernameTextField" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-        <PasswordField fx:id="passwordField" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+        <TextField  prefWidth="200.0" fx:id="usernameTextField" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+        <PasswordField prefWidth="200.0" fx:id="passwordField" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
     </GridPane>
-    <Button text="Login" onAction="#handleLogin"/>
+    <Button alignment="CENTER" style="-fx-background-color: #41c713; " text="Login" onAction="#handleLogin"/>
 </VBox>
