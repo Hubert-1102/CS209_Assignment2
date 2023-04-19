@@ -27,11 +27,12 @@ public class ServerService {
         return re > 0;
     }
 
-    public static ArrayList<Message> searchRealTimeChat(int id, int chatId, long time) throws SQLException {
+    public static ArrayList<Message> searchRealTimeChat(int idSend, int idTo, int chatId, long time) throws SQLException {
         Connection con = DriverManager.getConnection(Url, User, Password);
-        String sql = "select * from chat where sendTo = ?";
+        String sql = "select * from chat where sendTo = ? and sendBy = ?";
         PreparedStatement pstate = con.prepareStatement(sql);
-        pstate.setInt(1, id);
+        pstate.setInt(1, idTo);
+        pstate.setInt(2, idSend);
         ResultSet resultSet = pstate.executeQuery();
 
         ArrayList<Message> arrayList = new ArrayList<>();
@@ -47,15 +48,17 @@ public class ServerService {
     }
 
 
-    public static ArrayList<Message> searchHistoricalChat(int id) throws SQLException {
-        ArrayList<Message> arrayList = searchRealTimeChat(id, 0, 0);
-        arrayList.sort((o1, o2) -> {
+    public static ArrayList<Message> searchHistoricalChat(int id1, int id2) throws SQLException {
+        ArrayList<Message> arrayList1 = searchRealTimeChat(id1, id2, 0, 0);
+        ArrayList<Message> arrayList2 = searchRealTimeChat(id2, id1, 0, 0);
+        arrayList2.addAll(arrayList1);
+        arrayList2.sort((o1, o2) -> {
             long result = o1.getTimestamp() - o2.getTimestamp();
             if (result == 0)
                 return 0;
             return result < 0 ? -1 : 1;
         });
-        return arrayList;
+        return arrayList2;
     }
 
 }

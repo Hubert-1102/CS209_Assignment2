@@ -18,6 +18,11 @@ public class Message implements Serializable {
         return id;
     }
 
+    @Override
+    public String toString() {
+        return this.getData();
+    }
+
     public Message(Long timestamp, int sentBy, int sendTo, String data, int id) {
         this.timestamp = timestamp;
         this.id = id;

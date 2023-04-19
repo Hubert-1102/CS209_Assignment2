@@ -7,6 +7,7 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 public class ChattingClient {
@@ -43,6 +44,7 @@ public class ChattingClient {
                 long currentChatTime = 0;
                 while (true) {
                     try {
+
                         Socket socket = new Socket();
                         String content = "Need data";
                         socket.connect(new InetSocketAddress(host, port));
@@ -73,7 +75,7 @@ public class ChattingClient {
         }
     }
 
-    private void sendMessage(String message, int sendBy, int sendTo) throws IOException {
+    public void sendMessage(String message, int sendBy, int sendTo) throws IOException {
         Socket socket = new Socket();
         socket.connect(new InetSocketAddress(this.host, this.port));
         InputStream inputStream = socket.getInputStream();
@@ -84,6 +86,65 @@ public class ChattingClient {
         outputStream.close();
         inputStream.close();
         socket.close();
+    }
+
+    long currentChatTime = 0;
+    int currentChatId = 0;
+
+    public ArrayList<Message> getHistoryMessage(int id1, int id2) {
+        /*
+        -1 表示获取历史记录
+         */
+        ArrayList<Message> list = new ArrayList<>();
+        try {
+            Socket socket = new Socket();
+            String content = id1 + "&" + id2;
+            socket.connect(new InetSocketAddress(host, port));
+            ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
+            outputStream.writeObject(new Message(currentChatTime, -1, -1, content, currentChatId));
+            outputStream.flush();
+            ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream());
+            Message message;
+            while (!(message = ((Message) inputStream.readObject())).getData().equals("no data")) {
+                currentChatId = message.getId();
+                currentChatTime = message.getTimestamp();
+                list.add(message);
+                System.out.println(message.getData() + " send from " + message.getSentBy());
+            }
+            outputStream.close();
+            inputStream.close();
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        return list;
+    }
+
+    public ArrayList<Message> getRealTimeMessage(int id) {
+        /*
+        -2 表示获取实时记录
+         */
+        ArrayList<Message> list = new ArrayList<>();
+        try {
+            Socket socket = new Socket();
+            String content = Integer.toString(id);
+            socket.connect(new InetSocketAddress(host, port));
+            ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
+            outputStream.writeObject(new Message(currentChatTime, -2, -2, content, currentChatId));
+            outputStream.flush();
+            ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream());
+            Message message;
+            while (!(message = ((Message) inputStream.readObject())).getData().equals("no data")) {
+                currentChatId = message.getId();
+                currentChatTime = message.getTimestamp();
+                list.add(message);
+                System.out.println(message.getData() + " send from " + message.getSentBy());
+            }
+            outputStream.close();
+            inputStream.close();
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        return list;
     }
 
     public static void main(String[] args) throws IOException, SQLException {

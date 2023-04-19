@@ -31,15 +31,26 @@ public class ChattingServer {
 //                    bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
                     inputStream = new ObjectInputStream(socket.getInputStream());
                     Message message = (Message) inputStream.readObject();
-                    if (message.getSendTo() == -1) {
+                    if (message.getSendTo() == -1) {// 历史记录
                         ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
-                        for (Message msg : ServerService.searchRealTimeChat(message.getSentBy(), message.getId(), message.getTimestamp())) {
+                        for (Message msg : ServerService.searchHistoricalChat(Integer.parseInt(message.getData().split("&")[0])
+                                , Integer.parseInt(message.getData().split("&")[1]))) {
                             outputStream.writeObject(msg);
                             outputStream.flush();
                         }
                         outputStream.writeObject(new Message(0L, 0, 0, "no data"));
                         outputStream.flush();
                         outputStream.close();
+                    } else if (message.getSendTo() == -2) {
+                        ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
+                        for (Message msg : ServerService.searchRealTimeChat(message.getSendTo(), message.getSentBy(), message.getId(), message.getTimestamp())) {
+                            outputStream.writeObject(msg);
+                            outputStream.flush();
+                        }
+                        outputStream.writeObject(new Message(0L, 0, 0, "no data"));
+                        outputStream.flush();
+                        outputStream.close();
+
                     } else {
                         System.out.println(message.getSendTo());
                         System.out.println(message.getData());
