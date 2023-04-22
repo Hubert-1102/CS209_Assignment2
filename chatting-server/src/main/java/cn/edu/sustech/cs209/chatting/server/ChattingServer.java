@@ -1,6 +1,7 @@
 package cn.edu.sustech.cs209.chatting.server;
 
 import cn.edu.sustech.cs209.chatting.common.Message;
+import cn.edu.sustech.cs209.chatting.common.User;
 import cn.edu.sustech.cs209.chatting.server.ServerService;
 
 import java.io.*;
@@ -31,23 +32,24 @@ public class ChattingServer {
 //                    bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
                     inputStream = new ObjectInputStream(socket.getInputStream());
                     Message message = (Message) inputStream.readObject();
-                    if (message.getSendTo() == -1) {// 历史记录
+                    if (message.getSendTo().getId() == -1) {// 历史记录
                         ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
                         for (Message msg : ServerService.searchHistoricalChat(Integer.parseInt(message.getData().split("&")[0])
                                 , Integer.parseInt(message.getData().split("&")[1]))) {
                             outputStream.writeObject(msg);
                             outputStream.flush();
                         }
-                        outputStream.writeObject(new Message(0L, 0, 0, "no data"));
+                        outputStream.writeObject(new Message(0L, null, null, "no data"));
                         outputStream.flush();
                         outputStream.close();
-                    } else if (message.getSendTo() == -2) {
+                    } else if (message.getSendTo().getId() == -2) {
                         ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
-                        for (Message msg : ServerService.searchRealTimeChat(message.getSendTo(), message.getSentBy(), message.getId(), message.getTimestamp())) {
+                        String[] ids = message.getData().split("&");
+                        for (Message msg : ServerService.searchRealTimeChat(Integer.parseInt(ids[0]), Integer.parseInt(ids[1]), message.getId(), message.getTimestamp())) {
                             outputStream.writeObject(msg);
                             outputStream.flush();
                         }
-                        outputStream.writeObject(new Message(0L, 0, 0, "no data"));
+                        outputStream.writeObject(new Message(0L, null, null, "no data"));
                         outputStream.flush();
                         outputStream.close();
 

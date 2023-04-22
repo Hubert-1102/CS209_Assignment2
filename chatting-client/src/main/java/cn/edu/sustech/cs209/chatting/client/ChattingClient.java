@@ -49,7 +49,7 @@ public class ChattingClient {
                         String content = "Need data";
                         socket.connect(new InetSocketAddress(host, port));
                         ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
-                        outputStream.writeObject(new Message(currentChatTime, id, -1, content, currentChatId));
+                        outputStream.writeObject(new Message(currentChatTime, User.getUserById(id), new User("", -1), content, currentChatId));
                         outputStream.flush();
                         ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream());
                         Message message;
@@ -81,7 +81,7 @@ public class ChattingClient {
         InputStream inputStream = socket.getInputStream();
         ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
 
-        outputStream.writeObject(new Message(System.currentTimeMillis(), sendBy, sendTo, message));
+        outputStream.writeObject(new Message(System.currentTimeMillis(), User.getUserById(sendBy), User.getUserById(sendTo), message));
         outputStream.flush();
         outputStream.close();
         inputStream.close();
@@ -101,7 +101,7 @@ public class ChattingClient {
             String content = id1 + "&" + id2;
             socket.connect(new InetSocketAddress(host, port));
             ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
-            outputStream.writeObject(new Message(currentChatTime, -1, -1, content, currentChatId));
+            outputStream.writeObject(new Message(currentChatTime, new User("", -1), new User("", -1), content, currentChatId));
             outputStream.flush();
             ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream());
             Message message;
@@ -119,17 +119,17 @@ public class ChattingClient {
         return list;
     }
 
-    public ArrayList<Message> getRealTimeMessage(int id) {
+    public ArrayList<Message> getRealTimeMessage(int id1,int id2) {
         /*
         -2 表示获取实时记录
          */
         ArrayList<Message> list = new ArrayList<>();
         try {
             Socket socket = new Socket();
-            String content = Integer.toString(id);
+            String content = id1 +"&"+ id2;
             socket.connect(new InetSocketAddress(host, port));
             ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
-            outputStream.writeObject(new Message(currentChatTime, -2, -2, content, currentChatId));
+            outputStream.writeObject(new Message(currentChatTime, new User("", -2), new User("", -2), content, currentChatId));
             outputStream.flush();
             ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream());
             Message message;
@@ -148,7 +148,6 @@ public class ChattingClient {
     }
 
     public static void main(String[] args) throws IOException, SQLException {
-
         ChattingClient chattingClient = new ChattingClient("127.0.0.1", 9999);
         chattingClient.run();
     }

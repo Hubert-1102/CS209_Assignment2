@@ -3,6 +3,7 @@ package cn.edu.sustech.cs209.chatting.client.controller;
 import cn.edu.sustech.cs209.chatting.client.ChattingClient;
 import cn.edu.sustech.cs209.chatting.common.Message;
 import cn.edu.sustech.cs209.chatting.common.User;
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -27,6 +28,9 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.ResourceBundle;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ChatController implements Initializable {
@@ -35,7 +39,7 @@ public class ChatController implements Initializable {
     public TextArea inputArea;
     @FXML
     ListView<Message> chatContentList;
-
+    private ScheduledExecutorService scheduledExecutorService;
     @FXML
     ListView<User> chatList;
 
@@ -71,24 +75,40 @@ public class ChatController implements Initializable {
         String content = inputArea.getText();
         System.out.println(content);
         chattingClient.sendMessage(content, id, currentChatId);
-        messages.add(new Message(System.currentTimeMillis(), id, currentChatId, content));
+        messages.add(new Message(System.currentTimeMillis(), User.getUserById(id), User.getUserById(currentChatId), content));
         chatContentList.setItems(messages);
+        inputArea.setText("");
     }
 
 
     @FXML
     public void createPrivateChat() {
-        AtomicReference<String> user = new AtomicReference<>();
+//        AtomicReference<String> user = new AtomicReference<>();
 
         Stage stage = new Stage();
         ComboBox<String> userSel = new ComboBox<>();
-
+        ArrayList<User> arrayList = User.getUsers();
+        for (User user1 : arrayList) {
+            if (user1.getId() != id)
+                userSel.getItems().add(user1.getName());
+        }
         // FIXME: get the user list from server, the current user's name should be filtered out
-        userSel.getItems().addAll("Item 1", "Item 2", "Item 3");
+//        userSel.getItems().addAll("Item 1", "Item 2", "Item 3");
 
         Button okBtn = new Button("OK");
         okBtn.setOnAction(e -> {
-            user.set(userSel.getSelectionModel().getSelectedItem());
+            if (users.contains(User.getUserByName(userSel.getSelectionModel().getSelectedItem()))) {
+                if (currentChatId != 0)
+                    changeChat = 1;
+                currentChatId = Objects.requireNonNull(User.getUserByName(userSel.getSelectionModel().getSelectedItem())).getId();
+                getHistory(currentChatId);
+//                getRealTime();
+                stage.close();
+                return;
+            }
+//            user.set(userSel.getSelectionModel().getSelectedItem());
+            users.add(User.getUserByName(userSel.getSelectionModel().getSelectedItem()));
+            chatList.setItems(users);
             stage.close();
         });
 
@@ -111,9 +131,7 @@ public class ChatController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        users = FXCollections.observableArrayList(
-                new User("mike", 2), new User("alice", 3)
-        );
+        users = FXCollections.observableArrayList();
         chattingClient = new ChattingClient("127.0.0.1", 9999);
         chatList.setItems(users);
         chatList.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<User>() {
@@ -123,7 +141,7 @@ public class ChatController implements Initializable {
                     changeChat = 1;
                 currentChatId = newUser.getId();
                 getHistory(currentChatId);
-                getRealTime(currentChatId);
+//                getRealTime();
             }
         });
 
@@ -134,6 +152,8 @@ public class ChatController implements Initializable {
             }
 
         });
+        chatContentList.setCellFactory(new MessageCellFactory());
+        getRealTime();
     }
 
     private void getHistory(int id) {
@@ -145,21 +165,43 @@ public class ChatController implements Initializable {
     }
 
 
-    private void getRealTime(int id) {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (changeChat == 0) {
-                    ArrayList<Message> arrayList = chattingClient.getRealTimeMessage(currentChatId);
-                    if (arrayList.size() > 0) {
-                        System.out.println(arrayList.get(0));
-                        messages.addAll(arrayList);
-                        chatContentList.setItems(messages);
-                    }
+    private void getRealTime() {
+        scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+        Runnable task = () -> {
+            // 在 JavaFX Application 线程上执行 UI 更新操作
+            Platform.runLater(() -> {
+                if(currentChatId==0)
+                    return;
+                ArrayList<Message> arrayList = chattingClient.getRealTimeMessage(currentChatId, id);
+                if (arrayList.size() > 0) {
+                    messages.addAll(arrayList);
+                    chatContentList.setItems(messages);
                 }
-                changeChat = 1;
-            }
-        }).start();
+            });
+        };
+        long initialDelay = 0;
+        long period =2; // 每隔 0.1 秒执行一次
+
+        scheduledExecutorService.scheduleAtFixedRate(task, initialDelay, period, TimeUnit.SECONDS);
+//        Platform.runLater(new Runnable() {
+//            @Override
+//            public void run() {
+//                while (changeChat == 0) {
+//                    ArrayList<Message> arrayList = chattingClient.getRealTimeMessage(currentChatId,id);
+//                    if (arrayList.size() > 0) {
+//                        System.out.println("  getrealtime:" + arrayList.get(0));
+//                        messages.addAll(arrayList);
+//                        chatContentList.setItems(messages);
+//                    }
+//                    try {
+//                        Thread.sleep(100);
+//                    } catch (InterruptedException e) {
+//                        throw new RuntimeException(e);
+//                    }
+//                }
+//                changeChat = 0;
+//            }
+//        });
 
     }
 
@@ -173,18 +215,20 @@ public class ChatController implements Initializable {
                 public void updateItem(Message msg, boolean empty) {
                     super.updateItem(msg, empty);
                     if (empty || Objects.isNull(msg)) {
+                        setText(null);
+                        setGraphic(null);
                         return;
                     }
 
                     HBox wrapper = new HBox();
-                    Label nameLabel = new Label(Integer.toString(msg.getSentBy()));
+                    Label nameLabel = new Label((msg.getSentBy().getName()));
                     Label msgLabel = new Label(msg.getData());
 
                     nameLabel.setPrefSize(50, 20);
                     nameLabel.setWrapText(true);
                     nameLabel.setStyle("-fx-border-color: black; -fx-border-width: 1px;");
 
-                    if (username.equals(Integer.toString(msg.getSentBy()))) {
+                    if (username.getText().equals("Hello! " + msg.getSentBy().getName() + " ")) {
                         wrapper.setAlignment(Pos.TOP_RIGHT);
                         wrapper.getChildren().addAll(msgLabel, nameLabel);
                         msgLabel.setPadding(new Insets(0, 20, 0, 0));

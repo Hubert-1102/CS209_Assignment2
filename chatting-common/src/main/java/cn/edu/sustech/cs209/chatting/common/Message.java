@@ -8,9 +8,9 @@ public class Message implements Serializable {
 
     private int id;
 
-    private final int sentBy;
+    private final User sentBy;
 
-    private final int sendTo;
+    private final User sendTo;
 
     private final String data;
 
@@ -20,10 +20,10 @@ public class Message implements Serializable {
 
     @Override
     public String toString() {
-        return this.getData();
+        return this.getSentBy().getName() + " : " + this.getData();
     }
 
-    public Message(Long timestamp, int sentBy, int sendTo, String data, int id) {
+    public Message(Long timestamp, User sentBy, User sendTo, String data, int id) {
         this.timestamp = timestamp;
         this.id = id;
         this.sentBy = sentBy;
@@ -31,7 +31,7 @@ public class Message implements Serializable {
         this.data = data;
     }
 
-    public Message(Long timestamp, int sentBy, int sendTo, String data) {
+    public Message(Long timestamp, User sentBy, User sendTo, String data) {
         this.timestamp = timestamp;
         this.sentBy = sentBy;
         this.sendTo = sendTo;
@@ -42,11 +42,11 @@ public class Message implements Serializable {
         return timestamp;
     }
 
-    public int getSentBy() {
+    public User getSentBy() {
         return sentBy;
     }
 
-    public int getSendTo() {
+    public User getSendTo() {
         return sendTo;
     }
 

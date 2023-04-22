@@ -177,14 +177,14 @@ public class Controller implements Initializable {
                     }
 
                     HBox wrapper = new HBox();
-                    Label nameLabel = new Label(Integer.toString(msg.getSentBy()));
+                    Label nameLabel = new Label(Integer.toString(msg.getSentBy().getId()));
                     Label msgLabel = new Label(msg.getData());
 
                     nameLabel.setPrefSize(50, 20);
                     nameLabel.setWrapText(true);
                     nameLabel.setStyle("-fx-border-color: black; -fx-border-width: 1px;");
 
-                    if (username.equals(Integer.toString(msg.getSentBy()))) {
+                    if (username.equals(Integer.toString(msg.getSentBy().getId()))) {
                         wrapper.setAlignment(Pos.TOP_RIGHT);
                         wrapper.getChildren().addAll(msgLabel, nameLabel);
                         msgLabel.setPadding(new Insets(0, 20, 0, 0));
