@@ -9,10 +9,8 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import cn.edu.sustech.cs209.chatting.client.ClientService;
-
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.Objects;
 
 public class LoginController {
 

@@ -1,7 +1,6 @@
 package cn.edu.sustech.cs209.chatting.client;
 
 import cn.edu.sustech.cs209.chatting.common.User;
-
 import java.sql.*;
 
 public class ClientService {

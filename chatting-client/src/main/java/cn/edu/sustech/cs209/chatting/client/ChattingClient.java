@@ -2,7 +2,6 @@ package cn.edu.sustech.cs209.chatting.client;
 
 import cn.edu.sustech.cs209.chatting.common.Message;
 import cn.edu.sustech.cs209.chatting.common.User;
-
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;

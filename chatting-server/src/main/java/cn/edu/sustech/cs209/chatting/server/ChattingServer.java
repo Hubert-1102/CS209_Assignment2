@@ -1,9 +1,6 @@
 package cn.edu.sustech.cs209.chatting.server;
 
 import cn.edu.sustech.cs209.chatting.common.Message;
-import cn.edu.sustech.cs209.chatting.common.User;
-import cn.edu.sustech.cs209.chatting.server.ServerService;
-
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
