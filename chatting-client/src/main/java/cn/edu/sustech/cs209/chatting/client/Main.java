@@ -28,7 +28,12 @@ public class Main extends Application {
     }
 
     private void handleClose(WindowEvent event) {
-        ChatController.shutdown();
+        try {
+            ChatController.shutdown();
+
+        }catch (Exception e){
+            System.out.println("error close");
+        }
     }
 
 

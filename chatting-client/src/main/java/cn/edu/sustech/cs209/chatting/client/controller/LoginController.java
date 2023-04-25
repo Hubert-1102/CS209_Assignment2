@@ -9,6 +9,7 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import cn.edu.sustech.cs209.chatting.client.ClientService;
+
 import java.io.IOException;
 import java.sql.SQLException;
 
@@ -27,6 +28,7 @@ public class LoginController {
         User user = ClientService.login(username, password);
         if (user != null) {
             int id = user.getId();
+            ClientService.updateOnline(id, 1);
             FXMLLoader loader = new FXMLLoader(getClass().getResource("../chat.fxml"));
             Parent chatRoot = loader.load();
             ChatController chatController = loader.getController();

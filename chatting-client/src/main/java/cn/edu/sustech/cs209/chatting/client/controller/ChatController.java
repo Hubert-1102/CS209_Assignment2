@@ -1,6 +1,7 @@
 package cn.edu.sustech.cs209.chatting.client.controller;
 
 import cn.edu.sustech.cs209.chatting.client.ChattingClient;
+import cn.edu.sustech.cs209.chatting.client.ClientService;
 import cn.edu.sustech.cs209.chatting.client.controller.LoginController;
 import cn.edu.sustech.cs209.chatting.common.Message;
 import cn.edu.sustech.cs209.chatting.common.User;
@@ -22,6 +23,8 @@ import javafx.scene.control.cell.CheckBoxListCell;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+
+import java.sql.SQLException;
 import java.util.stream.Collectors;
 import javafx.util.Callback;
 import java.net.URL;
@@ -45,7 +48,7 @@ public class ChatController implements Initializable {
     @FXML
     private Label username;
 
-    int id;
+    static int id;
 
     int currentChatId = 0;
 
@@ -66,8 +69,8 @@ public class ChatController implements Initializable {
         this.username.setText("Hello! " + username + " ");
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public void setId(int id1) {
+        id = id1;
     }
 
     @FXML
@@ -194,7 +197,7 @@ public class ChatController implements Initializable {
         }
         PriorityQueue<temporal> priorityQueue = new PriorityQueue<>((o1, o2) -> (int) (-o1.time + o2.time));
         for (User user : User.getAllUsers()) {
-            ArrayList<Message> arrayList = chattingClient.getHistoryMessage(this.id, user.getId());
+            ArrayList<Message> arrayList = chattingClient.getHistoryMessage(id, user.getId());
             if (arrayList.isEmpty())
                 continue;
             long time = arrayList.get(arrayList.size() - 1).getTimestamp();
@@ -240,9 +243,9 @@ public class ChatController implements Initializable {
         getRealTime();
     }
 
-    private void getHistory(int id) {
+    private void getHistory(int id1) {
         try {
-            ArrayList<Message> arrayList = chattingClient.getHistoryMessage(this.id, id);
+            ArrayList<Message> arrayList = chattingClient.getHistoryMessage(id, id1);
             messages = FXCollections.observableArrayList(
                     arrayList
             );
@@ -256,8 +259,20 @@ public class ChatController implements Initializable {
     private void getRealTime() {
         scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
         Runnable task = () -> {
+
             // 在 JavaFX Application 线程上执行 UI 更新操作
             Platform.runLater(() -> {
+                try {
+                    ArrayList<User> list = ClientService.searchOnline();
+                    StringBuilder stringBuilder = new StringBuilder();
+                    for (User user : list) {
+                        stringBuilder.append(user.getName()).append(",");
+                    }
+                    stringBuilder.deleteCharAt(stringBuilder.length()-1);
+                    currentOnlineCnt.setText(stringBuilder.toString());
+                } catch (SQLException e) {
+                    System.out.println("Error");
+                }
                 if (currentChatId == 0)
                     return;
                 try {
@@ -292,6 +307,11 @@ public class ChatController implements Initializable {
     }
 
     public static void shutdown() {
+        try {
+            ClientService.updateOnline(id,0);
+        } catch (SQLException e) {
+            System.out.println("Error");;
+        }
         scheduledExecutorService.shutdown();
     }
 
