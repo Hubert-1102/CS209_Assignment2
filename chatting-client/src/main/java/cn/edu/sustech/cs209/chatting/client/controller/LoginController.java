@@ -15,6 +15,7 @@ import java.sql.SQLException;
 import java.util.Objects;
 
 public class LoginController {
+
     @FXML
     private TextField usernameTextField;
 
@@ -33,6 +34,7 @@ public class LoginController {
             ChatController chatController = loader.getController();
             chatController.setUsername(username);
             chatController.setId(id);
+            chatController.init();
             Scene chatScene = new Scene(chatRoot);
             Stage primaryStage = (Stage) usernameTextField.getScene().getWindow();
             primaryStage.setScene(chatScene);

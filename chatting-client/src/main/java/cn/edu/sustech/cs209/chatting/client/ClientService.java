@@ -32,8 +32,4 @@ public class ClientService {
         return null;
     }
 
-
-    public static void main(String[] args) throws SQLException {
-
-    }
 }

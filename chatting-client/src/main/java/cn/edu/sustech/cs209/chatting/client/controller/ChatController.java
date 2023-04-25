@@ -1,9 +1,12 @@
 package cn.edu.sustech.cs209.chatting.client.controller;
 
 import cn.edu.sustech.cs209.chatting.client.ChattingClient;
+import cn.edu.sustech.cs209.chatting.client.controller.LoginController;
 import cn.edu.sustech.cs209.chatting.common.Message;
 import cn.edu.sustech.cs209.chatting.common.User;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -14,6 +17,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.CheckBoxListCell;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -25,23 +29,25 @@ import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Objects;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class ChatController implements Initializable {
     @FXML
-
     public TextArea inputArea;
     @FXML
     ListView<Message> chatContentList;
-    private ScheduledExecutorService scheduledExecutorService;
+    private static ScheduledExecutorService scheduledExecutorService;
     @FXML
     ListView<User> chatList;
+
+    @FXML
+    private Label currentOnlineCnt;
 
     @FXML
     private Label username;
@@ -49,6 +55,7 @@ public class ChatController implements Initializable {
     int id;
 
     int currentChatId = 0;
+
 
     int changeChat = 0;
 
@@ -73,8 +80,13 @@ public class ChatController implements Initializable {
     @FXML
     private void doSendMessage() throws IOException {
         String content = inputArea.getText();
-        System.out.println(content);
-        chattingClient.sendMessage(content, id, currentChatId);
+        if(content.equals(""))
+            return;
+        try {
+            chattingClient.sendMessage(content, id, currentChatId);
+        } catch (Exception e) {
+            System.out.println("no");
+        }
         messages.add(new Message(System.currentTimeMillis(), User.getUserById(id), User.getUserById(currentChatId), content));
         chatContentList.setItems(messages);
         inputArea.setText("");
@@ -126,11 +138,87 @@ public class ChatController implements Initializable {
 
     @FXML
     private void createGroupChat() {
+        Stage stage = new Stage();
+        ListView<User> userSel = new ListView<>();
+        ArrayList<User> selected = new ArrayList<>();
+        selected.add(User.getUserById(id));
+        userSel.setCellFactory(CheckBoxListCell.forListView(new Callback<User, ObservableValue<Boolean>>() {
+            @Override
+            public ObservableValue<Boolean> call(User item) {
+                BooleanProperty observable = new SimpleBooleanProperty();
+                observable.addListener((obs, wasSelected, isSelected) -> {
+                    System.out.println(isSelected);
+                    if (isSelected) {
+                        selected.add(item);
+                    } else {
+                        selected.remove(item);
+                    }
+                });
+                return observable;
+            }
+        }));
 
+        ArrayList<User> arrayList = User.getUsers();
+        for (User user1 : arrayList) {
+            if (user1.getId() != id)
+                userSel.getItems().add(user1);
+        }
+        Button okBtn = new Button("OK");
+
+        okBtn.setOnAction(e -> {
+            StringBuilder stringBuilder = new StringBuilder();
+            selected.sort(Comparator.comparingInt(User::getId));
+            for (User item : selected) {
+                System.out.println(item.getId());
+                stringBuilder.append(item.getId()).append("&");
+            }
+            if (users.contains(User.getUserByName(stringBuilder.toString()))) {
+                if (currentChatId != 0)
+                    changeChat = 1;
+                currentChatId = Objects.requireNonNull(User.getUserByName(stringBuilder.toString())).getId();
+                getHistory(currentChatId);
+                stage.close();
+                return;
+            }
+            users.add(User.getUserByName(stringBuilder.toString()));
+            chatList.setItems(users);
+            stage.close();
+        });
+
+        HBox box = new HBox(10);
+        box.setAlignment(Pos.CENTER);
+        box.setPadding(new Insets(20, 20, 20, 20));
+        box.getChildren().addAll(userSel, okBtn);
+        stage.setScene(new Scene(box));
+        stage.showAndWait();
+
+    }
+
+    public void init() {
+        class temporal {
+            User user;
+            long time;
+        }
+        PriorityQueue<temporal> priorityQueue = new PriorityQueue<>((o1, o2) -> (int) (-o1.time + o2.time));
+        for (User user : User.getAllUsers()) {
+            ArrayList<Message> arrayList = chattingClient.getHistoryMessage(this.id, user.getId());
+            if (arrayList.isEmpty())
+                continue;
+            long time = arrayList.get(arrayList.size() - 1).getTimestamp();
+            temporal t = new temporal();
+            t.time = time;
+            t.user = user;
+            priorityQueue.add(t);
+        }
+        while (!priorityQueue.isEmpty()) {
+            users.add(priorityQueue.poll().user);
+        }
+        chatList.setItems(users);
     }
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+
         users = FXCollections.observableArrayList();
         chattingClient = new ChattingClient("127.0.0.1", 9999);
         chatList.setItems(users);
@@ -141,9 +229,12 @@ public class ChatController implements Initializable {
                     changeChat = 1;
                 currentChatId = newUser.getId();
                 getHistory(currentChatId);
+                System.out.println(newUser);
+                System.out.println(currentChatId + "id");
 //                getRealTime();
             }
         });
+
 
         chatContentList.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<Message>() {
             @Override
@@ -157,11 +248,15 @@ public class ChatController implements Initializable {
     }
 
     private void getHistory(int id) {
-        ArrayList<Message> arrayList = chattingClient.getHistoryMessage(this.id, id);
-        messages = FXCollections.observableArrayList(
-                arrayList
-        );
-        chatContentList.setItems(messages);
+        try {
+            ArrayList<Message> arrayList = chattingClient.getHistoryMessage(this.id, id);
+            messages = FXCollections.observableArrayList(
+                    arrayList
+            );
+            chatContentList.setItems(messages);
+        } catch (Exception e) {
+            System.out.println("Server not available");
+        }
     }
 
 
@@ -170,41 +265,42 @@ public class ChatController implements Initializable {
         Runnable task = () -> {
             // 在 JavaFX Application 线程上执行 UI 更新操作
             Platform.runLater(() -> {
-                if(currentChatId==0)
+                if (currentChatId == 0)
                     return;
-                ArrayList<Message> arrayList = chattingClient.getRealTimeMessage(currentChatId, id);
-                if (arrayList.size() > 0) {
-                    messages.addAll(arrayList);
-                    chatContentList.setItems(messages);
+                try {
+                    ArrayList<Message> arrayList = chattingClient.getRealTimeMessage(currentChatId, id);
+                    if (arrayList.size() > 0) {
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                        alert.setTitle("Information");
+                        alert.setHeaderText("This is a popup notification");
+                        alert.setContentText("New message");
+                        alert.showAndWait();
+                        messages.addAll(arrayList.stream().
+                                filter(message -> message.getSentBy().getId() != id)
+                                .collect(Collectors.toList()));
+                        chatContentList.setItems(messages);
+                    }
+                } catch (Exception e) {
+                    Alert alert = new Alert(Alert.AlertType.WARNING);
+                    alert.setTitle("Information");
+                    alert.setHeaderText("This is a popup notification");
+                    alert.setContentText("Server not available!");
+
+                    alert.showAndWait();
+                    scheduledExecutorService.shutdown();
                 }
+
             });
         };
         long initialDelay = 0;
-        long period =2; // 每隔 0.1 秒执行一次
-
+        long period = 2;
         scheduledExecutorService.scheduleAtFixedRate(task, initialDelay, period, TimeUnit.SECONDS);
-//        Platform.runLater(new Runnable() {
-//            @Override
-//            public void run() {
-//                while (changeChat == 0) {
-//                    ArrayList<Message> arrayList = chattingClient.getRealTimeMessage(currentChatId,id);
-//                    if (arrayList.size() > 0) {
-//                        System.out.println("  getrealtime:" + arrayList.get(0));
-//                        messages.addAll(arrayList);
-//                        chatContentList.setItems(messages);
-//                    }
-//                    try {
-//                        Thread.sleep(100);
-//                    } catch (InterruptedException e) {
-//                        throw new RuntimeException(e);
-//                    }
-//                }
-//                changeChat = 0;
-//            }
-//        });
 
     }
 
+    public static void shutdown() {
+        scheduledExecutorService.shutdown();
+    }
 
     private class MessageCellFactory implements Callback<ListView<Message>, ListCell<Message>> {
         @Override

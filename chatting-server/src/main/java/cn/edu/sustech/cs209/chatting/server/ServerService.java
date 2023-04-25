@@ -30,6 +30,8 @@ public class ServerService {
     }
 
     public static ArrayList<Message> searchRealTimeChat(int idSend, int idTo, int chatId, long time) throws SQLException {
+        if (idSend > 5)
+            return searchRealTimeChatGroup(idSend, time);
         Connection con = DriverManager.getConnection(Url, UserName, Password);
         String sql = "select * from chat where sendTo = ? and sendBy = ?";
         PreparedStatement pstate = con.prepareStatement(sql);
@@ -49,8 +51,37 @@ public class ServerService {
         return arrayList;
     }
 
+    public static ArrayList<Message> searchRealTimeChatGroup(int idTo, long time) throws SQLException {
+        Connection con = DriverManager.getConnection(Url, UserName, Password);
+        String sql = "select * from chat where sendTo = ?";
+        PreparedStatement pstate = con.prepareStatement(sql);
+        pstate.setInt(1, idTo);
+        ResultSet resultSet = pstate.executeQuery();
+
+        ArrayList<Message> arrayList = new ArrayList<>();
+        while (resultSet.next()) {
+            if (resultSet.getTimestamp("date").getTime() > time)
+                arrayList.add(new Message(resultSet.getTimestamp("date").getTime(),
+                        User.getUserById(resultSet.getInt("sendBy")),
+                        User.getUserById(resultSet.getInt("sendTo")), resultSet.getString("data"),
+                        resultSet.getInt("id")));
+        }
+        con.close();
+        return arrayList;
+    }
+
 
     public static ArrayList<Message> searchHistoricalChat(int id1, int id2) throws SQLException {
+        if (id2 > 5) {
+            ArrayList<Message> arrayList1 = searchRealTimeChatGroup(id2, 0);
+            arrayList1.sort((o1, o2) -> {
+                long result = o1.getTimestamp() - o2.getTimestamp();
+                if (result == 0)
+                    return 0;
+                return result < 0 ? -1 : 1;
+            });
+            return arrayList1;
+        }
         ArrayList<Message> arrayList1 = searchRealTimeChat(id1, id2, 0, 0);
         ArrayList<Message> arrayList2 = searchRealTimeChat(id2, id1, 0, 0);
         arrayList2.addAll(arrayList1);
@@ -62,5 +93,7 @@ public class ServerService {
         });
         return arrayList2;
     }
+
+
 
 }

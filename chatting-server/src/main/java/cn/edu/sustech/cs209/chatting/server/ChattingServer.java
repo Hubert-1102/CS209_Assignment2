@@ -24,7 +24,6 @@ public class ChattingServer {
         server.bind(new InetSocketAddress(this.port));// 只有端口，默认绑定本机的IP -- localhost
         ExecutorService executorService = Executors.newFixedThreadPool(100);
         while (true) {
-
             Socket socket = server.accept();
             Runnable runnable = () -> {
                 ObjectInputStream inputStream = null;
@@ -61,10 +60,8 @@ public class ChattingServer {
                     }
                     inputStream.close();
                     socket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (ClassNotFoundException | SQLException e) {
-                    throw new RuntimeException(e);
+                } catch (Exception e) {
+                    System.out.println("client offline");
                 }
             };
             executorService.submit(runnable);

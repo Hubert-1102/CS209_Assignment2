@@ -37,32 +37,28 @@ public class ChattingClient {
             System.out.println("login successfully!");
         int id = user.getId();
         Scanner sc = new Scanner(System.in);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                int currentChatId = 0;
-                long currentChatTime = 0;
-                while (true) {
-                    try {
-
-                        Socket socket = new Socket();
-                        String content = "Need data";
-                        socket.connect(new InetSocketAddress(host, port));
-                        ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
-                        outputStream.writeObject(new Message(currentChatTime, User.getUserById(id), new User("", -1), content, currentChatId));
-                        outputStream.flush();
-                        ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream());
-                        Message message;
-                        while (!(message = ((Message) inputStream.readObject())).getData().equals("no data")) {
-                            currentChatId = message.getId();
-                            currentChatTime = message.getTimestamp();
-                            System.out.println(message.getData() + " send from " + message.getSentBy());
-                        }
-                        outputStream.close();
-                        inputStream.close();
-                    } catch (IOException | ClassNotFoundException e) {
-                        throw new RuntimeException(e);
+        new Thread(() -> {
+            int currentChatId = 0;
+            long currentChatTime = 0;
+            while (true) {
+                try {
+                    Socket socket = new Socket();
+                    String content = "Need data";
+                    socket.connect(new InetSocketAddress(host, port));
+                    ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
+                    outputStream.writeObject(new Message(currentChatTime, User.getUserById(id), new User("", -1), content, currentChatId));
+                    outputStream.flush();
+                    ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream());
+                    Message message;
+                    while (!(message = ((Message) inputStream.readObject())).getData().equals("no data")) {
+                        currentChatId = message.getId();
+                        currentChatTime = message.getTimestamp();
+                        System.out.println(message.getData() + " send from " + message.getSentBy());
                     }
+                    outputStream.close();
+                    inputStream.close();
+                } catch (Exception e) {
+                    System.out.println("Some error");
                 }
             }
         }).start();
@@ -80,7 +76,6 @@ public class ChattingClient {
         socket.connect(new InetSocketAddress(this.host, this.port));
         InputStream inputStream = socket.getInputStream();
         ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
-
         outputStream.writeObject(new Message(System.currentTimeMillis(), User.getUserById(sendBy), User.getUserById(sendTo), message));
         outputStream.flush();
         outputStream.close();
@@ -113,8 +108,8 @@ public class ChattingClient {
             }
             outputStream.close();
             inputStream.close();
-        } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            System.out.println("Some error");
         }
         return list;
     }
@@ -141,8 +136,8 @@ public class ChattingClient {
             }
             outputStream.close();
             inputStream.close();
-        } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            System.out.println("Some error");
         }
         return list;
     }
